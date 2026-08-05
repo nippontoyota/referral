@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
+import { createDirectPrisma } from "@/lib/prisma-direct";
 import { requireAdmin } from "@/lib/session";
+
+const BATCH = 2_000;
 
 function resendConfirmed(value?: boolean | FormData): boolean {
   if (typeof value === "boolean") return value;
@@ -16,40 +19,60 @@ export async function startSend(
 ): Promise<{ jobId: string }> {
   await requireAdmin();
 
-  const job = await prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('referral-send-import'))`;
-    const active = await tx.sendJob.findFirst({
-      where: { status: { in: ["pending", "running"] } },
-      select: { id: true },
-    });
-    if (active) throw new Error("A send is already in progress");
-
-    const previous = await tx.sendJob.findFirst({ select: { id: true } });
-    if (previous && !resendConfirmed(confirmation)) {
-      throw new Error("Confirm before starting another send");
-    }
-
-    const customers = await tx.customer.findMany({
-      select: { id: true, phone: true },
-    });
-    if (!customers.length) throw new Error("There are no customers to send to");
-
-    const created = await tx.sendJob.create({
-      data: { status: "pending", total: customers.length },
-      select: { id: true },
-    });
-    await tx.sendMessage.createMany({
-      data: customers.map((customer) => ({
-        jobId: created.id,
-        customerId: customer.id,
-        phone: customer.phone,
-      })),
-    });
-    return created;
+  const active = await prisma.sendJob.findFirst({
+    where: { status: { in: ["pending", "running"] } },
+    select: { id: true },
   });
+  if (active) throw new Error("A send is already in progress");
 
-  revalidatePath("/admin/send");
-  return { jobId: job.id };
+  const previous = await prisma.sendJob.findFirst({ select: { id: true } });
+  if (previous && !resendConfirmed(confirmation)) {
+    throw new Error("Confirm before starting another send");
+  }
+
+  const total = await prisma.customer.count();
+  if (!total) throw new Error("There are no customers to send to");
+
+  const db = createDirectPrisma();
+  try {
+    const job = await db.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('referral-send-import'))`;
+        const created = await tx.sendJob.create({
+          data: { status: "pending", total },
+          select: { id: true },
+        });
+
+        let cursor: string | undefined;
+        for (;;) {
+          const customers = await tx.customer.findMany({
+            take: BATCH,
+            ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+            orderBy: { id: "asc" },
+            select: { id: true, phone: true },
+          });
+          if (!customers.length) break;
+          await tx.sendMessage.createMany({
+            data: customers.map((customer) => ({
+              jobId: created.id,
+              customerId: customer.id,
+              phone: customer.phone,
+            })),
+          });
+          cursor = customers.at(-1)?.id;
+          if (customers.length < BATCH) break;
+        }
+
+        return created;
+      },
+      { maxWait: 20_000, timeout: 300_000 },
+    );
+
+    revalidatePath("/admin/send");
+    return { jobId: job.id };
+  } finally {
+    await db.$disconnect();
+  }
 }
 
 export async function retryFailed(jobId?: string): Promise<void> {
@@ -90,10 +113,7 @@ export async function retryFailed(jobId?: string): Promise<void> {
 export async function getActiveOrLatestJob() {
   await requireAdmin();
   const job = await prisma.sendJob.findFirst({
-    orderBy: [
-      { status: "asc" },
-      { createdAt: "desc" },
-    ],
+    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     select: {
       id: true,
       status: true,
@@ -105,6 +125,7 @@ export async function getActiveOrLatestJob() {
       createdAt: true,
       messages: {
         where: { status: "failed" },
+        take: 100,
         select: { id: true, phone: true, attempts: true, lastError: true },
         orderBy: { createdAt: "asc" },
       },

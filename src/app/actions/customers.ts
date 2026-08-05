@@ -2,67 +2,104 @@
 
 import { revalidatePath } from "next/cache";
 
+import { parseCustomerUpload } from "@/lib/customer-file";
 import { prisma } from "@/lib/prisma";
+import { createDirectPrisma } from "@/lib/prisma-direct";
 import { createReferralToken } from "@/lib/referral-token";
 import { requireAdmin } from "@/lib/session";
-import {
-  validateCustomerCsv,
-  type RejectedCustomerRow,
+import type {
+  CustomerImportRow,
+  RejectedCustomerRow,
 } from "@/schemas/customer-import";
 
 export type CustomerImportResult = {
   accepted: number;
+  rejectedCount: number;
   rejected: RejectedCustomerRow[];
 };
+
+const BATCH = 2_000;
+const REJECT_PREVIEW = 100;
+
+export async function replaceCustomers(
+  rows: CustomerImportRow[],
+  rejected: RejectedCustomerRow[],
+  filename: string,
+): Promise<CustomerImportResult> {
+  await requireAdmin();
+  if (!rows.length) throw new Error("File has no valid customer rows");
+
+  const active = await prisma.sendJob.findFirst({
+    where: { status: { in: ["pending", "running"] } },
+    select: { id: true },
+  });
+  if (active) throw new Error("Import blocked while a send is in progress");
+
+  const db = createDirectPrisma();
+  try {
+    await db.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('referral-send-import'))`;
+
+        const existing = await tx.customer.findMany({
+          select: { phone: true, referralToken: true },
+        });
+        const tokens = new Map(
+          existing.map((customer) => [customer.phone, customer.referralToken]),
+        );
+
+        await tx.customer.deleteMany();
+
+        for (let offset = 0; offset < rows.length; offset += BATCH) {
+          const chunk = rows.slice(offset, offset + BATCH);
+          await tx.customer.createMany({
+            data: chunk.map((row) => ({
+              name: row.name,
+              phone: row.phone,
+              referralToken: tokens.get(row.phone) ?? createReferralToken(),
+            })),
+          });
+        }
+
+        await tx.customerImport.create({
+          data: {
+            filename,
+            acceptedCount: rows.length,
+            rejectedCount: rejected.length,
+            status: "completed",
+          },
+        });
+      },
+      { maxWait: 20_000, timeout: 300_000 },
+    );
+  } finally {
+    await db.$disconnect();
+  }
+
+  revalidatePath("/admin/customers");
+  revalidatePath("/admin/send");
+  return {
+    accepted: rows.length,
+    rejectedCount: rejected.length,
+    rejected: rejected.slice(0, REJECT_PREVIEW),
+  };
+}
 
 export async function importCustomers(
   formData: FormData,
 ): Promise<CustomerImportResult> {
   await requireAdmin();
   const file = formData.get("file");
-  if (!file || typeof file === "string") throw new Error("Choose a CSV file");
-
-  const parsed = validateCustomerCsv(await file.text());
-  if (!parsed.accepted.length) {
-    throw new Error("CSV has no valid customer rows");
+  if (!file || typeof file === "string") {
+    throw new Error("Choose a CSV or Excel file");
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('referral-send-import'))`;
-    const active = await tx.sendJob.findFirst({
-      where: { status: { in: ["pending", "running"] } },
-      select: { id: true },
-    });
-    if (active) throw new Error("Import blocked while a send is in progress");
-
-    const existing = await tx.customer.findMany({
-      where: { phone: { in: parsed.accepted.map((row) => row.phone) } },
-      select: { phone: true, referralToken: true },
-    });
-    const tokens = new Map(
-      existing.map((customer) => [customer.phone, customer.referralToken]),
-    );
-
-    await tx.customer.deleteMany();
-    await tx.customer.createMany({
-      data: parsed.accepted.map((row) => ({
-        ...row,
-        referralToken: tokens.get(row.phone) ?? createReferralToken(),
-      })),
-    });
-    await tx.customerImport.create({
-      data: {
-        filename: file.name || "customers.csv",
-        acceptedCount: parsed.accepted.length,
-        rejectedCount: parsed.rejected.length,
-        status: "completed",
-      },
-    });
-  });
-
-  revalidatePath("/admin/customers");
-  revalidatePath("/admin/send");
-  return { accepted: parsed.accepted.length, rejected: parsed.rejected };
+  const parsed = await parseCustomerUpload(file);
+  return replaceCustomers(
+    parsed.accepted,
+    parsed.rejected,
+    file.name || "customers",
+  );
 }
 
 export async function clearTestData(

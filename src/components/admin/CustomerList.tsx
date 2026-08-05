@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 
 import { StatusPill } from "@/components/ui/status-pill";
 
@@ -12,46 +13,75 @@ export type CustomerListItem = {
   createdAt: string;
 };
 
-export function CustomerList({ customers }: { customers: CustomerListItem[] }) {
-  const [query, setQuery] = useState("");
+export function CustomerList({
+  customers,
+  query,
+  page,
+  total,
+  totalPages,
+}: {
+  customers: CustomerListItem[];
+  query: string;
+  page: number;
+  total: number;
+  totalPages: number;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState(query);
+  const [pending, startTransition] = useTransition();
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return customers;
-    return customers.filter(
-      (customer) =>
-        customer.name.toLowerCase().includes(q) ||
-        customer.phone.toLowerCase().includes(q),
-    );
-  }, [customers, query]);
+  function submitSearch(event: React.FormEvent) {
+    event.preventDefault();
+    const next = value.trim();
+    startTransition(() => {
+      const params = new URLSearchParams();
+      if (next) params.set("q", next);
+      params.set("page", "1");
+      router.push(`/admin/customers?${params.toString()}`);
+    });
+  }
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-bold uppercase tracking-wide text-[var(--color-charcoal)]">
+      <form onSubmit={submitSearch} className="flex flex-col gap-1.5">
+        <label
+          htmlFor="customer-search"
+          className="text-xs font-bold uppercase tracking-wide text-[var(--color-charcoal)]"
+        >
           Search customers
-        </span>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Name or phone"
-          className="min-h-11 w-full rounded-[var(--radius-inputs)] border border-[var(--color-hairline)] bg-[var(--color-pearl)] px-4 text-base text-[var(--color-ink)] placeholder:text-[var(--color-smoke)]"
-        />
-      </label>
+        </label>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            id="customer-search"
+            type="search"
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            placeholder="Name or phone"
+            className="min-h-11 w-full rounded-[var(--radius-inputs)] border border-[var(--color-hairline)] bg-[var(--color-pearl)] px-4 text-base text-[var(--color-ink)] placeholder:text-[var(--color-smoke)]"
+          />
+          <button
+            type="submit"
+            disabled={pending}
+            className="min-h-11 rounded-[var(--radius-pill)] bg-[var(--color-toyota-red)] px-5 text-sm font-bold text-white disabled:opacity-60"
+          >
+            {pending ? "Searching…" : "Search"}
+          </button>
+        </div>
+      </form>
 
       <p className="text-sm text-[var(--color-charcoal)]">
-        Showing {filtered.length} of {customers.length}
+        Showing {customers.length} of {total.toLocaleString()}
+        {totalPages > 1 ? ` · page ${page}/${totalPages}` : ""}
       </p>
 
-      {filtered.length === 0 ? (
+      {customers.length === 0 ? (
         <p className="rounded-[var(--radius-cards)] border border-[var(--color-hairline)] bg-[var(--color-white)] p-6 text-sm text-[var(--color-charcoal)]">
           No customers match this search.
         </p>
       ) : (
         <>
           <ul className="flex flex-col gap-3 md:hidden">
-            {filtered.map((customer) => (
+            {customers.map((customer) => (
               <li
                 key={customer.id}
                 className="rounded-[var(--radius-cards)] border border-[var(--color-hairline)] bg-[var(--color-white)] p-4"
@@ -88,7 +118,7 @@ export function CustomerList({ customers }: { customers: CustomerListItem[] }) {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((customer, index) => (
+                {customers.map((customer, index) => (
                   <tr
                     key={customer.id}
                     className={

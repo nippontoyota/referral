@@ -1,37 +1,29 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
+import * as XLSX from "xlsx";
 
-import {
-  clearTestData,
-  importCustomers,
-  type CustomerImportResult,
-} from "@/app/actions/customers";
+import { clearTestData } from "@/app/actions/customers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { RejectedCustomerRow } from "@/schemas/customer-import";
+import { parseCsv } from "@/lib/csv";
+import {
+  validateCustomerMatrix,
+  type RejectedCustomerRow,
+} from "@/schemas/customer-import";
 
 type ImportState = {
   error?: string;
   accepted?: number;
+  rejectedCount?: number;
   rejected?: RejectedCustomerRow[];
+  progress?: string;
 } | null;
 
 type ClearState = { error?: string; ok?: boolean } | null;
 
-async function importAction(
-  _previous: ImportState,
-  formData: FormData,
-): Promise<ImportState> {
-  try {
-    const result: CustomerImportResult = await importCustomers(formData);
-    return { accepted: result.accepted, rejected: result.rejected };
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : "Import failed",
-    };
-  }
-}
+const CHUNK = 2_000;
 
 async function clearAction(
   _previous: ClearState,
@@ -48,6 +40,26 @@ async function clearAction(
   }
 }
 
+async function readMatrix(file: File): Promise<unknown[][]> {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".csv") || file.type === "text/csv") {
+    return parseCsv(await file.text());
+  }
+
+  const workbook = XLSX.read(await file.arrayBuffer(), {
+    type: "array",
+    raw: true,
+  });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  if (!sheet) throw new Error("Workbook has no sheets");
+  return XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
+    defval: "",
+    blankrows: false,
+    raw: true,
+  });
+}
+
 export function CustomerUpload({
   lastImport,
   importBlocked,
@@ -60,16 +72,16 @@ export function CustomerUpload({
   } | null;
   importBlocked: boolean;
 }) {
-  const [importState, importFormAction, importPending] = useActionState(
-    importAction,
-    null,
-  );
+  const router = useRouter();
+  const [importState, setImportState] = useState<ImportState>(null);
+  const [importPending, setImportPending] = useState(false);
   const [clearState, clearFormAction, clearPending] = useActionState(
     clearAction,
     null,
   );
   const [clearOpen, setClearOpen] = useState(false);
   const [clearSession, setClearSession] = useState(0);
+  const [fileName, setFileName] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   const dialogOpen = clearOpen && !clearState?.ok;
@@ -83,30 +95,135 @@ export function CustomerUpload({
 
   const summaryAccepted = importState?.accepted ?? lastImport?.acceptedCount;
   const summaryRejected =
-    importState?.rejected?.length ?? lastImport?.rejectedCount;
+    importState?.rejectedCount ?? lastImport?.rejectedCount;
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const file = new FormData(form).get("file");
+    if (!file || typeof file === "string") {
+      setImportState({ error: "Choose a CSV or Excel file" });
+      return;
+    }
+
+    setImportPending(true);
+    setImportState({ progress: "Reading spreadsheet…" });
+
+    try {
+      const matrix = await readMatrix(file);
+      setImportState({
+        progress: `Validating ${matrix.length.toLocaleString()} rows…`,
+      });
+      const parsed = validateCustomerMatrix(matrix);
+      if (!parsed.accepted.length) {
+        throw new Error("File has no valid customer rows");
+      }
+
+      setImportState({
+        progress: "Preparing replace…",
+      });
+      const beginRes = await fetch("/api/admin/customers/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phase: "begin",
+          filename: file.name,
+          totalAccepted: parsed.accepted.length,
+          rejectedCount: parsed.rejected.length,
+        }),
+      });
+      const beginPayload = (await beginRes.json()) as {
+        error?: string;
+        tokens?: Record<string, string>;
+      };
+      if (!beginRes.ok) {
+        throw new Error(beginPayload.error || "Could not start import");
+      }
+
+      const tokens = beginPayload.tokens ?? {};
+      for (let offset = 0; offset < parsed.accepted.length; offset += CHUNK) {
+        const slice = parsed.accepted.slice(offset, offset + CHUNK);
+        setImportState({
+          progress: `Importing ${Math.min(offset + CHUNK, parsed.accepted.length).toLocaleString()} / ${parsed.accepted.length.toLocaleString()}…`,
+        });
+        const chunkRes = await fetch("/api/admin/customers/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phase: "chunk",
+            rows: slice.map((row) => ({
+              ...row,
+              referralToken: tokens[row.phone],
+            })),
+          }),
+        });
+        const chunkPayload = (await chunkRes.json()) as { error?: string };
+        if (!chunkRes.ok) {
+          throw new Error(chunkPayload.error || "Chunk import failed");
+        }
+      }
+
+      const finishRes = await fetch("/api/admin/customers/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phase: "finish",
+          filename: file.name,
+          accepted: parsed.accepted.length,
+          rejectedCount: parsed.rejected.length,
+        }),
+      });
+      const finishPayload = (await finishRes.json()) as { error?: string };
+      if (!finishRes.ok) {
+        throw new Error(finishPayload.error || "Could not finalize import");
+      }
+
+      setImportState({
+        accepted: parsed.accepted.length,
+        rejectedCount: parsed.rejected.length,
+        rejected: parsed.rejected.slice(0, 100),
+      });
+      form.reset();
+      setFileName(null);
+      router.refresh();
+    } catch (error) {
+      setImportState({
+        error: error instanceof Error ? error.message : "Import failed",
+      });
+    } finally {
+      setImportPending(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-8">
-      <form action={importFormAction} className="flex flex-col gap-4">
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <label
-          htmlFor="customer-csv"
+          htmlFor="customer-file"
           className="flex min-h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-[var(--color-hairline)] bg-[var(--color-pearl)] px-4 py-8 text-center rounded-[var(--radius-cards)]"
         >
           <span className="text-sm font-bold text-[var(--color-ink)]">
-            Upload customer CSV
+            Upload customer CSV / Excel
           </span>
           <span className="text-sm text-[var(--color-charcoal)]">
-            Columns: name, phone. Replaces the full active list.
+            Accepts .xlsx / .xls / .csv (e.g. CUSTOMER NAME + CUSTOMER NO.).
+            Handles 65k+ rows with chunked import.
           </span>
           <input
-            id="customer-csv"
+            id="customer-file"
             name="file"
             type="file"
-            accept=".csv,text/csv"
+            accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
             required
             disabled={importBlocked || importPending}
+            onChange={(event) =>
+              setFileName(event.target.files?.[0]?.name ?? null)
+            }
             className="mt-2 w-full max-w-full text-sm text-[var(--color-charcoal)] file:mr-3 file:min-h-11 file:rounded-[var(--radius-pill)] file:border-0 file:bg-[var(--color-white)] file:px-4 file:font-bold file:text-[var(--color-ink)]"
           />
+          {fileName ? (
+            <span className="text-xs text-[var(--color-smoke)]">{fileName}</span>
+          ) : null}
         </label>
 
         {importBlocked ? (
@@ -118,6 +235,12 @@ export function CustomerUpload({
         {importState?.error ? (
           <p className="text-sm text-[var(--color-danger)]" role="alert">
             {importState.error}
+          </p>
+        ) : null}
+
+        {importPending && importState?.progress ? (
+          <p className="text-sm text-[var(--color-charcoal)]" role="status">
+            {importState.progress}
           </p>
         ) : null}
 
@@ -166,6 +289,14 @@ export function CustomerUpload({
                   Row {row.row}: {row.reason}
                 </li>
               ))}
+              {(importState.rejectedCount ?? 0) > importState.rejected.length ? (
+                <li>
+                  …and{" "}
+                  {(importState.rejectedCount ?? 0) -
+                    importState.rejected.length}{" "}
+                  more
+                </li>
+              ) : null}
             </ul>
           ) : null}
         </div>

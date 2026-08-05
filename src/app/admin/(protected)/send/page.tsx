@@ -13,6 +13,7 @@ async function loadJob(): Promise<SendJobView | null> {
     createdAt: true,
     messages: {
       where: { status: "failed" as const },
+      take: 100,
       select: {
         id: true,
         phone: true,

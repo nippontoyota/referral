@@ -41,6 +41,7 @@ model Customer {
   referrals     Referral[]
   sendMessages  SendMessage[]
 
+  @@index([name])
   @@map("customers")
 }
 
