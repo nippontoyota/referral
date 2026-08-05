@@ -1,0 +1,166 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { submitReferral, type ReferralResult } from "@/app/actions/referral";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+
+type FormState = ReferralResult | null;
+
+async function referralAction(
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  return submitReferral(formData);
+}
+
+function ReferralFormBody({
+  token,
+  referrerName,
+  onReferAnother,
+}: {
+  token: string;
+  referrerName: string;
+  onReferAnother: () => void;
+}) {
+  const [state, formAction, pending] = useActionState(referralAction, null);
+  const [model, setModel] = useState<"glanza" | "hyryder" | "">("");
+
+  const firstName = referrerName.trim().split(/\s+/)[0] || "there";
+  const success = state?.ok === true;
+
+  if (success) {
+    return (
+      <Card hero className="w-full max-w-[560px]">
+        <div
+          className="mb-6 flex h-12 w-12 items-center justify-center rounded-[var(--radius-pill)] text-xl font-bold text-white"
+          style={{ background: "var(--color-gold)" }}
+          aria-hidden
+        >
+          ✓
+        </div>
+        <h1 className="text-3xl font-bold text-[var(--color-ink)] md:text-5xl">
+          Thank you
+        </h1>
+        <p className="mt-3 text-base text-[var(--color-charcoal)]">
+          Your referral was submitted. Nippon Toyota will follow up with your
+          friend.
+        </p>
+        <div className="mt-8">
+          <Button type="button" fullWidth onClick={onReferAnother}>
+            Refer another
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card hero className="w-full max-w-[560px]">
+      <p className="text-xs font-bold uppercase tracking-wide text-[var(--color-toyota-red)]">
+        Nippon Toyota
+      </p>
+      <h1 className="mt-3 text-3xl font-bold text-[var(--color-ink)] md:text-5xl">
+        Hi {firstName}
+      </h1>
+      <p className="mt-3 text-base text-[var(--color-charcoal)]">
+        Refer a friend interested in a Glanza or Hyryder.
+      </p>
+
+      <form action={formAction} className="mt-8 flex flex-col gap-5">
+        <input type="hidden" name="token" value={token} />
+        <div className="honeypot" aria-hidden="true">
+          <label htmlFor="website">Website</label>
+          <input
+            id="website"
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+          />
+        </div>
+
+        <Input
+          label="Friend’s name"
+          name="referredName"
+          required
+          minLength={2}
+          maxLength={100}
+          autoComplete="name"
+        />
+        <Input
+          label="Friend’s mobile"
+          name="referredPhone"
+          required
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="10-digit Indian mobile"
+        />
+
+        <fieldset>
+          <legend className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--color-charcoal)]">
+            Interested model
+          </legend>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {(["glanza", "hyryder"] as const).map((value) => {
+              const selected = model === value;
+              return (
+                <label
+                  key={value}
+                  className={[
+                    "flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-pill)] border px-4 py-3 text-sm font-bold capitalize",
+                    selected
+                      ? "border-[var(--color-toyota-red)] text-[var(--color-toyota-red)]"
+                      : "border-[var(--color-hairline)] text-[var(--color-ink)]",
+                  ].join(" ")}
+                >
+                  <input
+                    type="radio"
+                    name="model"
+                    value={value}
+                    checked={selected}
+                    onChange={() => setModel(value)}
+                    required
+                    className="sr-only"
+                  />
+                  {value}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        {state && !state.ok ? (
+          <p className="text-sm text-[var(--color-danger)]" role="alert">
+            {state.error}
+          </p>
+        ) : null}
+
+        <Button type="submit" disabled={pending || !model} fullWidth>
+          {pending ? "Submitting…" : "Submit referral"}
+        </Button>
+      </form>
+    </Card>
+  );
+}
+
+export function ReferralForm({
+  token,
+  referrerName,
+}: {
+  token: string;
+  referrerName: string;
+}) {
+  const [instance, setInstance] = useState(0);
+
+  return (
+    <ReferralFormBody
+      key={instance}
+      token={token}
+      referrerName={referrerName}
+      onReferAnother={() => setInstance((value) => value + 1)}
+    />
+  );
+}
