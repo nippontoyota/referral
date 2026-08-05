@@ -9,7 +9,19 @@ Next.js referral platform for existing customers to refer Glanza / Hyryder leads
 - Next.js 16 (App Router) on Vercel
 - Supabase Postgres via Prisma (`DATABASE_URL` pooler + `DIRECT_URL`)
 - DoubleTick WhatsApp template API
-- Vercel Cron (`* * * * *`) for the send worker
+- Vercel Cron (`0 9 * * *` daily on Hobby; upgrade to Pro for per-minute) for the send worker
+
+## Production
+
+- Live: https://referral-black.vercel.app
+- Vercel: `nippontoyotas-projects/referral` (GitHub connected)
+- Supabase: `pcydxlfxjslhafxgnlci`
+
+Keep local `.env` aligned with Vercel:
+
+```powershell
+powershell -File scripts/sync-env.ps1
+```
 
 ## Environment variables
 
@@ -60,11 +72,11 @@ Use `DIRECT_URL` for migrate; the app runtime uses the pooler `DATABASE_URL`.
 
 ```json
 {
-  "crons": [{ "path": "/api/cron/whatsapp", "schedule": "* * * * *" }]
+  "crons": [{ "path": "/api/cron/whatsapp", "schedule": "0 9 * * *" }]
 }
 ```
 
-Cron calls `/api/cron/whatsapp` every minute with `Authorization: Bearer ${CRON_SECRET}`.
+On Hobby, cron runs once daily. For near-real-time WhatsApp blasts, upgrade the Vercel team to Pro and switch the schedule back to `* * * * *`.
 
 ## WhatsApp template constant
 
