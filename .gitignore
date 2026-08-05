@@ -47,7 +47,3 @@ docs/
 
 # Local secret temp files (never commit)
 .supabase-db-pass.tmp
-
-
-# Local secrets scratch files
-.supabase-db-pass.tmp

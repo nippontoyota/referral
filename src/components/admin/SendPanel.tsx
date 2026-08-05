@@ -45,16 +45,12 @@ export function SendPanel({
   hasPriorJob: boolean;
 }) {
   const router = useRouter();
-  const [job, setJob] = useState(initialJob);
+  const job = initialJob;
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const active = job?.status === "pending" || job?.status === "running";
-
-  useEffect(() => {
-    setJob(initialJob);
-  }, [initialJob]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
