@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  --color-toyota-red: #eb0a1e;
+  --color-toyota-red-dark: #c4081a;
+  --color-gold: #d4af37;
+  --color-canvas: #fbf9f8;
+  --color-pearl: #f6f3f2;
+  --color-white: #ffffff;
+  --color-ink: #1b1c1c;
+  --color-charcoal: #5e5a59;
+  --color-smoke: #9a9694;
+  --color-hairline: #e4e2e1;
+  --color-success: #1e7a46;
+  --color-warning: #b4690e;
+  --color-danger: #ba1a1a;
+  --radius-inputs: 8px;
+  --radius-cards: 24px;
+  --radius-hero: 40px;
+  --radius-pill: 999px;
+}
+
+@theme inline {
+  --color-toyota-red: var(--color-toyota-red);
+  --color-toyota-red-dark: var(--color-toyota-red-dark);
+  --color-gold: var(--color-gold);
+  --color-canvas: var(--color-canvas);
+  --color-pearl: var(--color-pearl);
+  --color-ink: var(--color-ink);
+  --color-charcoal: var(--color-charcoal);
+  --color-smoke: var(--color-smoke);
+  --color-hairline: var(--color-hairline);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
