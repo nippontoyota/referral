@@ -14,7 +14,8 @@ export type ReferralResult =
 function toInput(input: ReferralInput | FormData): ReferralInput {
   if (!(input instanceof FormData)) return input;
   return {
-    token: String(input.get("token") ?? ""),
+    customerName: String(input.get("customerName") ?? ""),
+    customerPhone: String(input.get("customerPhone") ?? ""),
     referredName: String(input.get("referredName") ?? ""),
     referredPhone: String(input.get("referredPhone") ?? ""),
     model: String(input.get("model") ?? "") as ReferralInput["model"],
@@ -32,60 +33,24 @@ export async function submitReferral(
   if (!parsed.success) {
     return { ok: false, error: "Please check the submitted details" };
   }
-  const phone = normalizePhone(parsed.data.referredPhone);
-  if (!phone) {
-    return { ok: false, error: "Enter a valid Indian mobile number" };
+  const customerPhone = normalizePhone(parsed.data.customerPhone);
+  const referredPhone = normalizePhone(parsed.data.referredPhone);
+  if (!customerPhone || !referredPhone) {
+    return { ok: false, error: "Enter valid 10-digit Indian mobile numbers" };
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('referral-send-import'))`;
-      const referrer = await tx.customer.findUnique({
-        where: { referralToken: parsed.data.token },
-      });
-      if (!referrer) throw new Error("INVALID_LINK");
-
-      const currentCustomer = await tx.customer.findUnique({
-        where: { phone },
-        select: { id: true },
-      });
-      if (currentCustomer) throw new Error("CURRENT_CUSTOMER");
-
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${phone}))`;
-      const prior = await tx.referral.count({ where: { referredPhone: phone } });
-      const duplicateCount = prior + 1;
-
-      await tx.referral.create({
-        data: {
-          referrerCustomerId: referrer.id,
-          referrerName: referrer.name,
-          referrerPhone: referrer.phone,
-          referredName: parsed.data.referredName,
-          referredPhone: phone,
-          model: parsed.data.model,
-          isDuplicate: prior > 0,
-          duplicateCount,
-        },
-      });
-
-      if (prior > 0) {
-        await tx.referral.updateMany({
-          where: { referredPhone: phone },
-          data: { isDuplicate: true, duplicateCount },
-        });
-      }
+    await prisma.referral.create({
+      data: {
+        customerName: parsed.data.customerName,
+        customerPhone,
+        referredName: parsed.data.referredName,
+        referredPhone,
+        model: parsed.data.model,
+      },
     });
     return { ok: true };
-  } catch (error) {
-    if (error instanceof Error && error.message === "INVALID_LINK") {
-      return { ok: false, error: "This referral link is invalid" };
-    }
-    if (error instanceof Error && error.message === "CURRENT_CUSTOMER") {
-      return {
-        ok: false,
-        error: "This person is already a Nippon Toyota customer",
-      };
-    }
-    throw error;
+  } catch {
+    return { ok: false, error: "Could not submit. Please try again." };
   }
 }

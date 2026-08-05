@@ -16,19 +16,10 @@ async function referralAction(
   return submitReferral(formData);
 }
 
-function ReferralFormBody({
-  token,
-  referrerName,
-  onReferAnother,
-}: {
-  token: string;
-  referrerName: string;
-  onReferAnother: () => void;
-}) {
+function ReferralFormBody({ onReferAnother }: { onReferAnother: () => void }) {
   const [state, formAction, pending] = useActionState(referralAction, null);
   const [model, setModel] = useState<"glanza" | "hyryder" | "">("");
 
-  const firstName = referrerName.trim().split(/\s+/)[0] || "there";
   const success = state?.ok === true;
 
   if (success) {
@@ -63,14 +54,13 @@ function ReferralFormBody({
         Nippon Toyota
       </p>
       <h1 className="mt-3 text-3xl font-bold text-[var(--color-ink)] md:text-5xl">
-        Hi {firstName}
+        Refer a friend
       </h1>
       <p className="mt-3 text-base text-[var(--color-charcoal)]">
-        Refer a friend interested in a Glanza or Hyryder.
+        Share your details and tell us who is interested in a Glanza or Hyryder.
       </p>
 
       <form action={formAction} className="mt-8 flex flex-col gap-5">
-        <input type="hidden" name="token" value={token} />
         <div className="honeypot" aria-hidden="true">
           <label htmlFor="website">Website</label>
           <input
@@ -83,7 +73,23 @@ function ReferralFormBody({
         </div>
 
         <Input
-          label="Friend’s name"
+          label="Your name"
+          name="customerName"
+          required
+          minLength={2}
+          maxLength={100}
+          autoComplete="name"
+        />
+        <Input
+          label="Your mobile"
+          name="customerPhone"
+          required
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="10-digit Indian mobile"
+        />
+        <Input
+          label="Person you are referring"
           name="referredName"
           required
           minLength={2}
@@ -91,7 +97,7 @@ function ReferralFormBody({
           autoComplete="name"
         />
         <Input
-          label="Friend’s mobile"
+          label="Their mobile"
           name="referredPhone"
           required
           inputMode="tel"
@@ -146,20 +152,12 @@ function ReferralFormBody({
   );
 }
 
-export function ReferralForm({
-  token,
-  referrerName,
-}: {
-  token: string;
-  referrerName: string;
-}) {
+export function ReferralForm() {
   const [instance, setInstance] = useState(0);
 
   return (
     <ReferralFormBody
       key={instance}
-      token={token}
-      referrerName={referrerName}
       onReferAnother={() => setInstance((value) => value + 1)}
     />
   );

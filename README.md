@@ -1,27 +1,18 @@
 # Nippon Toyota Referral
 
-Next.js referral platform for existing customers to refer Glanza / Hyryder leads via personalized WhatsApp links.
-
-**Domain:** `https://refer.nippontoyota.in`
+One public form that stores Glanza / Hyryder referrals in Supabase.
 
 ## Stack
 
-- Next.js 16 (App Router) on Vercel
-- Supabase Postgres via Prisma (`DATABASE_URL` pooler + `DIRECT_URL`)
-- DoubleTick WhatsApp template API
-- Vercel Cron (`0 9 * * *` daily on Hobby; upgrade to Pro for per-minute) for the send worker
+- Next.js 16
+- Prisma + Supabase Postgres
+- Vercel
 
 ## Production
 
 - Live: https://referral-black.vercel.app
 - Vercel: `nippontoyotas-projects/referral` (GitHub connected)
 - Supabase: `pcydxlfxjslhafxgnlci`
-
-Keep local `.env` aligned with Vercel:
-
-```powershell
-powershell -File scripts/sync-env.ps1
-```
 
 ## Environment variables
 
@@ -31,14 +22,6 @@ Copy `.env.example` to `.env` (local) and set the same keys in the Vercel projec
 |----------|---------|
 | `DATABASE_URL` | Supabase **pooler** connection string (port **6543**, often with `?pgbouncer=true`) |
 | `DIRECT_URL` | Supabase **direct** connection string (port **5432**) for migrations |
-| `SESSION_SECRET` | Long random secret for admin JWT cookies |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Shared staff login |
-| `NEXT_PUBLIC_APP_URL` | Public origin, e.g. `https://refer.nippontoyota.in` |
-| `DOUBLETICK_API_KEY` | DoubleTick API key (`Authorization` header) |
-| `DOUBLETICK_FROM` | WhatsApp Business from number |
-| `CRON_SECRET` | Bearer token for `/api/cron/whatsapp` |
-
-Without `DOUBLETICK_API_KEY` in non-production, sends are mocked (logged + delayed) so local dry-runs work.
 
 ## Local setup
 
@@ -50,7 +33,7 @@ npx prisma migrate deploy
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — root redirects to `/admin/login`.
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Supabase + migrations
 
@@ -68,34 +51,6 @@ Use `DIRECT_URL` for migrate; the app runtime uses the pooler `DATABASE_URL`.
 1. Import the GitHub repo `nippontoyota/referral` into Vercel.
 2. Set all environment variables listed above (Production + Preview as needed).
 3. Attach custom domain `refer.nippontoyota.in`.
-4. Confirm `vercel.json` cron is active:
-
-```json
-{
-  "crons": [{ "path": "/api/cron/whatsapp", "schedule": "0 9 * * *" }]
-}
-```
-
-On Hobby, cron runs once daily. For near-real-time WhatsApp blasts, upgrade the Vercel team to Pro and switch the schedule back to `* * * * *`.
-
-## WhatsApp template constant
-
-Template name and placeholder order are **hardcoded** (no admin UI):
-
-- File: `src/lib/doubletick.ts`
-- Constant: `REFERRAL_TEMPLATE_NAME` (currently `nippon_referral_invite_v1`)
-- Placeholders: `[customer name, referral URL]`
-
-When Meta approves the live template, update `REFERRAL_TEMPLATE_NAME` to the approved name and redeploy.
-
-## Staff workflow
-
-1. Sign in at `/admin/login`.
-2. **Customers** — upload CSV (`name,phone`); optionally **Clear test data** (password confirm) before the first real list.
-3. **Send** — confirm recipient count, start blast, watch progress (polls ~2s), retry failed only.
-4. **Referrals** — stats, search/model filter, export CSV via `/api/admin/referrals/export`.
-
-Public form: `https://refer.nippontoyota.in/r/{referral_token}`.
 
 ## Scripts
 
