@@ -1,6 +1,7 @@
 "use client";
 
 import type { InputHTMLAttributes } from "react";
+import Image from "next/image";
 import { useActionState, useEffect, useRef, useState } from "react";
 
 import { submitReferral, type ReferralResult } from "@/app/actions/referral";
@@ -43,17 +44,14 @@ function Field({
 
 function BrandMark() {
   return (
-    <span className="inline-flex items-center gap-2.5">
-      <span
-        className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-toyota-red)] text-sm font-bold text-white"
-        aria-hidden
-      >
-        N
-      </span>
-      <span className="text-sm font-semibold tracking-wide text-[var(--color-toyota-red)]">
-        Nippon Toyota
-      </span>
-    </span>
+    <Image
+      src="/nippon-logo.png"
+      alt="Nippon Toyota"
+      className="h-8 w-auto object-contain self-start"
+      width={120}
+      height={32}
+      priority
+    />
   );
 }
 
