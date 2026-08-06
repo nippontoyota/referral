@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  // Stop next dev from regenerating AGENTS.md / CLAUDE.md
+  agentRules: false,
+};
 
 export default nextConfig;

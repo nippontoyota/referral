@@ -1,4 +1,4 @@
-import { ReferralForm } from "@/components/forms/ReferralForm";
+import { ReferralForm } from "@/components/ReferralForm";
 
 export default function Home() {
   return (

@@ -1,30 +1,44 @@
 "use client";
 
+import type { InputHTMLAttributes } from "react";
 import { useActionState, useState } from "react";
 
-import { submitReferral, type ReferralResult } from "@/app/actions/referral";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { submitReferral } from "@/app/actions/referral";
 
-type FormState = ReferralResult | null;
+const buttonClass =
+  "inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-toyota-red)] px-6 text-sm font-bold text-white hover:bg-[var(--color-toyota-red-dark)] disabled:opacity-60";
 
-async function referralAction(
-  _previous: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  return submitReferral(formData);
+const shellClass =
+  "w-full max-w-[560px] rounded-3xl border border-[var(--color-hairline)] bg-[var(--color-white)] p-6 md:rounded-[var(--radius-hero)] md:p-12";
+
+const radioClass =
+  "flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-hairline)] px-4 py-3 text-sm font-bold capitalize text-[var(--color-ink)] has-[:checked]:border-[var(--color-toyota-red)] has-[:checked]:text-[var(--color-toyota-red)]";
+
+function Input({
+  label,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  const id = props.id ?? props.name;
+  return (
+    <label className="flex flex-col gap-1.5" htmlFor={id}>
+      <span className="text-xs font-bold uppercase tracking-wide text-[var(--color-charcoal)]">
+        {label}
+      </span>
+      <input
+        {...props}
+        id={id}
+        className="min-h-11 w-full rounded-[var(--radius-inputs)] border border-[var(--color-hairline)] bg-[var(--color-pearl)] px-4 py-3 text-base text-[var(--color-ink)] placeholder:text-[var(--color-smoke)]"
+      />
+    </label>
+  );
 }
 
 function ReferralFormBody({ onReferAnother }: { onReferAnother: () => void }) {
-  const [state, formAction, pending] = useActionState(referralAction, null);
-  const [model, setModel] = useState<"glanza" | "hyryder" | "">("");
+  const [state, formAction, pending] = useActionState(submitReferral, null);
 
-  const success = state?.ok === true;
-
-  if (success) {
+  if (state?.ok) {
     return (
-      <Card hero className="w-full max-w-[560px]">
+      <div className={shellClass}>
         <div
           className="mb-6 flex h-12 w-12 items-center justify-center rounded-[var(--radius-pill)] text-xl font-bold text-white"
           style={{ background: "var(--color-gold)" }}
@@ -40,16 +54,16 @@ function ReferralFormBody({ onReferAnother }: { onReferAnother: () => void }) {
           friend.
         </p>
         <div className="mt-8">
-          <Button type="button" fullWidth onClick={onReferAnother}>
+          <button type="button" className={buttonClass} onClick={onReferAnother}>
             Refer another
-          </Button>
+          </button>
         </div>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card hero className="w-full max-w-[560px]">
+    <div className={shellClass}>
       <p className="text-xs font-bold uppercase tracking-wide text-[var(--color-toyota-red)]">
         Nippon Toyota
       </p>
@@ -110,31 +124,18 @@ function ReferralFormBody({ onReferAnother }: { onReferAnother: () => void }) {
             Interested model
           </legend>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {(["glanza", "hyryder"] as const).map((value) => {
-              const selected = model === value;
-              return (
-                <label
-                  key={value}
-                  className={[
-                    "flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-pill)] border px-4 py-3 text-sm font-bold capitalize",
-                    selected
-                      ? "border-[var(--color-toyota-red)] text-[var(--color-toyota-red)]"
-                      : "border-[var(--color-hairline)] text-[var(--color-ink)]",
-                  ].join(" ")}
-                >
-                  <input
-                    type="radio"
-                    name="model"
-                    value={value}
-                    checked={selected}
-                    onChange={() => setModel(value)}
-                    required
-                    className="sr-only"
-                  />
-                  {value}
-                </label>
-              );
-            })}
+            {(["glanza", "hyryder"] as const).map((value) => (
+              <label key={value} className={radioClass}>
+                <input
+                  type="radio"
+                  name="model"
+                  value={value}
+                  required
+                  className="sr-only"
+                />
+                {value}
+              </label>
+            ))}
           </div>
         </fieldset>
 
@@ -144,21 +145,20 @@ function ReferralFormBody({ onReferAnother }: { onReferAnother: () => void }) {
           </p>
         ) : null}
 
-        <Button type="submit" disabled={pending || !model} fullWidth>
+        <button type="submit" className={buttonClass} disabled={pending}>
           {pending ? "Submitting…" : "Submit referral"}
-        </Button>
+        </button>
       </form>
-    </Card>
+    </div>
   );
 }
 
 export function ReferralForm() {
   const [instance, setInstance] = useState(0);
-
   return (
     <ReferralFormBody
       key={instance}
-      onReferAnother={() => setInstance((value) => value + 1)}
+      onReferAnother={() => setInstance((n) => n + 1)}
     />
   );
 }

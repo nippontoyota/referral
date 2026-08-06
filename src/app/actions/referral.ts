@@ -2,37 +2,30 @@
 
 import { normalizePhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
-import {
-  referralSchema,
-  type ReferralInput,
-} from "@/schemas/referral";
+import { referralSchema } from "@/schemas/referral";
 
 export type ReferralResult =
   | { ok: true }
   | { ok: false; error: string };
 
-function toInput(input: ReferralInput | FormData): ReferralInput {
-  if (!(input instanceof FormData)) return input;
-  return {
-    customerName: String(input.get("customerName") ?? ""),
-    customerPhone: String(input.get("customerPhone") ?? ""),
-    referredName: String(input.get("referredName") ?? ""),
-    referredPhone: String(input.get("referredPhone") ?? ""),
-    model: String(input.get("model") ?? "") as ReferralInput["model"],
-    website: String(input.get("website") ?? ""),
-  };
-}
-
 export async function submitReferral(
-  input: ReferralInput | FormData,
+  _prev: ReferralResult | null,
+  formData: FormData,
 ): Promise<ReferralResult> {
-  const raw = toInput(input);
-  if (raw.website) return { ok: true };
+  // Honeypot: bots fill hidden "website"; pretend success.
+  if (String(formData.get("website") ?? "")) return { ok: true };
 
-  const parsed = referralSchema.safeParse(raw);
+  const parsed = referralSchema.safeParse({
+    customerName: String(formData.get("customerName") ?? ""),
+    customerPhone: String(formData.get("customerPhone") ?? ""),
+    referredName: String(formData.get("referredName") ?? ""),
+    referredPhone: String(formData.get("referredPhone") ?? ""),
+    model: String(formData.get("model") ?? ""),
+  });
   if (!parsed.success) {
     return { ok: false, error: "Please check the submitted details" };
   }
+
   const customerPhone = normalizePhone(parsed.data.customerPhone);
   const referredPhone = normalizePhone(parsed.data.referredPhone);
   if (!customerPhone || !referredPhone) {
