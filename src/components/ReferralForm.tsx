@@ -6,33 +6,35 @@ import { useActionState, useState } from "react";
 import { submitReferral, type ReferralResult } from "@/app/actions/referral";
 import { MAX_FRIENDS } from "@/schemas/referral";
 
-const buttonClass =
-  "inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-toyota-red)] px-6 text-sm font-bold text-white hover:bg-[var(--color-toyota-red-dark)] disabled:opacity-60";
+const primaryBtn =
+  "btn-press inline-flex min-h-12 w-full items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-toyota-red)] px-6 text-[15px] font-semibold tracking-wide text-white hover:bg-[var(--color-toyota-red-dark)] disabled:pointer-events-none disabled:opacity-55";
 
-const addButtonClass =
-  "inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-ink)] bg-transparent px-6 text-sm font-bold text-[var(--color-ink)] hover:bg-[var(--color-pearl)] disabled:opacity-60";
+const secondaryBtn =
+  "btn-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-pill)] border border-[var(--color-hairline)] bg-[var(--color-white)] px-5 text-sm font-semibold text-[var(--color-ink)] hover:border-[var(--color-charcoal)] hover:bg-[var(--color-pearl)] disabled:pointer-events-none disabled:opacity-55";
 
-const shellClass =
-  "w-full max-w-[560px] rounded-3xl border border-[var(--color-hairline)] bg-[var(--color-white)] p-6 md:rounded-[var(--radius-hero)] md:p-12";
+const panelClass =
+  "w-full max-w-[520px] rounded-[var(--radius-panel)] border border-[var(--color-hairline)] bg-[var(--color-white)] p-6 shadow-[var(--shadow-panel)] md:p-10";
 
-const radioClass =
-  "flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-hairline)] px-4 py-3 text-sm font-bold capitalize text-[var(--color-ink)] has-[:checked]:border-[var(--color-toyota-red)] has-[:checked]:text-[var(--color-toyota-red)]";
-
-function Input({
+function Field({
   label,
+  hint,
   ...props
-}: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+}: InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  hint?: string;
+}) {
   const id = props.id ?? props.name;
   return (
     <label className="flex flex-col gap-1.5" htmlFor={id}>
-      <span className="text-xs font-bold uppercase tracking-wide text-[var(--color-charcoal)]">
-        {label}
-      </span>
+      <span className="text-sm font-medium text-[var(--color-ink)]">{label}</span>
       <input
         {...props}
         id={id}
-        className="min-h-11 w-full rounded-[var(--radius-inputs)] border border-[var(--color-hairline)] bg-[var(--color-pearl)] px-4 py-3 text-base text-[var(--color-ink)] placeholder:text-[var(--color-smoke)]"
+        className="field-input min-h-12 w-full rounded-[var(--radius-inputs)] border border-[var(--color-hairline)] bg-[var(--color-pearl)] px-4 text-base text-[var(--color-ink)] placeholder:text-[var(--color-smoke)]"
       />
+      {hint ? (
+        <span className="text-xs text-[var(--color-smoke)]">{hint}</span>
+      ) : null}
     </label>
   );
 }
@@ -63,32 +65,35 @@ export function ReferralForm() {
 
   if (view === "thanks") {
     return (
-      <div className={shellClass}>
+      <div className={`${panelClass} thanks-panel`}>
         <div
-          className="mb-6 flex h-12 w-12 items-center justify-center rounded-[var(--radius-pill)] text-xl font-bold text-white"
+          className="mb-5 flex h-14 w-14 items-center justify-center rounded-[var(--radius-pill)] text-2xl font-semibold text-white"
           style={{ background: "var(--color-gold)" }}
           aria-hidden
         >
           ✓
         </div>
-        <h1 className="text-3xl font-bold text-[var(--color-ink)] md:text-5xl">
+        <p className="text-sm font-semibold text-[var(--color-toyota-red)]">
+          Nippon Toyota
+        </p>
+        <h1 className="mt-2 text-4xl font-semibold tracking-tight text-[var(--color-ink)] md:text-5xl">
           Thank you
         </h1>
-        <p className="mt-3 text-base text-[var(--color-charcoal)]">
-          Your referral was submitted. Nippon Toyota will follow up with your
-          friend.
+        <p className="mt-3 max-w-[36ch] text-base leading-relaxed text-[var(--color-charcoal)]">
+          Your referral is with us. Our team will follow up with your friend
+          soon.
         </p>
         <div className="mt-8">
           <button
             type="button"
-            className={buttonClass}
+            className={primaryBtn}
             onClick={() => {
               setFriendKeys([0]);
               setView("form");
               setFormKey((n) => n + 1);
             }}
           >
-            Refer another
+            Refer another friend
           </button>
         </div>
       </div>
@@ -96,21 +101,24 @@ export function ReferralForm() {
   }
 
   return (
-    <div className={shellClass}>
-      <p className="text-xs font-bold uppercase tracking-wide text-[var(--color-toyota-red)]">
-        Nippon Toyota
-      </p>
-      <h1 className="mt-3 text-3xl font-bold text-[var(--color-ink)] md:text-5xl">
-        Refer a friend
-      </h1>
-      <p className="mt-3 text-base text-[var(--color-charcoal)]">
-        Share your details and tell us who is interested in a Glanza or Hyryder.
-      </p>
+    <div className={panelClass}>
+      <header className="mb-8">
+        <p className="text-sm font-semibold text-[var(--color-toyota-red)]">
+          Nippon Toyota
+        </p>
+        <h1 className="mt-2 text-4xl font-semibold tracking-tight text-[var(--color-ink)] md:text-[2.75rem] md:leading-[1.1]">
+          Refer a friend
+        </h1>
+        <p className="mt-3 max-w-[40ch] text-base leading-relaxed text-[var(--color-charcoal)]">
+          Tell us about yourself, then add anyone interested in a Glanza or
+          Hyryder.
+        </p>
+      </header>
 
       <form
         key={formKey}
         action={formAction}
-        className="mt-8 flex flex-col gap-5"
+        className="flex flex-col gap-8"
       >
         <div className="honeypot" aria-hidden="true">
           <label htmlFor="website">Website</label>
@@ -123,84 +131,121 @@ export function ReferralForm() {
           />
         </div>
 
-        <Input
-          label="Your name"
-          name="customerName"
-          required
-          minLength={2}
-          maxLength={100}
-          autoComplete="name"
-          defaultValue={customer.name}
-        />
-        <Input
-          label="Your mobile"
-          name="customerPhone"
-          required
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder="10-digit Indian mobile"
-          defaultValue={customer.phone}
-        />
-
-        {friendKeys.map((key, index) => {
-          const n = index + 1;
-          const nameLabel =
-            n === 1 ? "Person you are referring" : `Person you are referring ${n}`;
-          const phoneLabel = n === 1 ? "Their mobile" : `Their mobile ${n}`;
-          return (
-            <div key={key} className="flex flex-col gap-5">
-              <Input
-                label={nameLabel}
-                id={`referredName-${key}`}
-                name="referredName"
-                required
-                minLength={2}
-                maxLength={100}
-                autoComplete="off"
-              />
-              <Input
-                label={phoneLabel}
-                id={`referredPhone-${key}`}
-                name="referredPhone"
-                required
-                inputMode="tel"
-                autoComplete="off"
-                placeholder="10-digit Indian mobile"
-              />
-              {friendKeys.length > 1 ? (
-                <button
-                  type="button"
-                  className="self-start text-sm font-bold text-[var(--color-danger)]"
-                  onClick={() =>
-                    setFriendKeys((keys) => keys.filter((k) => k !== key))
-                  }
-                >
-                  Remove person {n}
-                </button>
-              ) : null}
-            </div>
-          );
-        })}
-
-        {friendKeys.length < MAX_FRIENDS ? (
-          <button
-            type="button"
-            className={addButtonClass}
-            onClick={() =>
-              setFriendKeys((keys) => [...keys, (keys.at(-1) ?? 0) + 1])
-            }
+        <section className="flex flex-col gap-4" aria-labelledby="you-heading">
+          <h2
+            id="you-heading"
+            className="text-sm font-semibold text-[var(--color-ink)]"
           >
-            Add
-          </button>
-        ) : null}
+            Your details
+          </h2>
+          <Field
+            label="Your name"
+            name="customerName"
+            required
+            minLength={2}
+            maxLength={100}
+            autoComplete="name"
+            defaultValue={customer.name}
+          />
+          <Field
+            label="Your mobile"
+            name="customerPhone"
+            required
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="10-digit Indian mobile"
+            hint="We’ll use this if we need to reach you about the referral."
+            defaultValue={customer.phone}
+          />
+        </section>
 
-        <fieldset>
-          <legend className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--color-charcoal)]">
+        <section
+          className="flex flex-col gap-4"
+          aria-labelledby="friends-heading"
+        >
+          <div className="flex items-end justify-between gap-3">
+            <h2
+              id="friends-heading"
+              className="text-sm font-semibold text-[var(--color-ink)]"
+            >
+              Who you’re referring
+            </h2>
+            <span className="text-xs text-[var(--color-smoke)]">
+              {friendKeys.length}/{MAX_FRIENDS}
+            </span>
+          </div>
+
+          {friendKeys.map((key, index) => {
+            const n = index + 1;
+            return (
+              <div
+                key={key}
+                className={`friend-block flex flex-col gap-4 rounded-[var(--radius-inputs)] border border-[var(--color-hairline)] bg-[var(--color-pearl)]/60 p-4 ${
+                  index > 0 ? "mt-1" : ""
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-[var(--color-charcoal)]">
+                    Friend {n}
+                  </p>
+                  {friendKeys.length > 1 ? (
+                    <button
+                      type="button"
+                      className="btn-press text-sm font-semibold text-[var(--color-danger)]"
+                      onClick={() =>
+                        setFriendKeys((keys) => keys.filter((k) => k !== key))
+                      }
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+                <Field
+                  label="Their name"
+                  id={`referredName-${key}`}
+                  name="referredName"
+                  required
+                  minLength={2}
+                  maxLength={100}
+                  autoComplete="off"
+                />
+                <Field
+                  label="Their mobile"
+                  id={`referredPhone-${key}`}
+                  name="referredPhone"
+                  required
+                  inputMode="tel"
+                  autoComplete="off"
+                  placeholder="10-digit Indian mobile"
+                />
+              </div>
+            );
+          })}
+
+          {friendKeys.length < MAX_FRIENDS ? (
+            <button
+              type="button"
+              className={secondaryBtn}
+              onClick={() =>
+                setFriendKeys((keys) => [...keys, (keys.at(-1) ?? 0) + 1])
+              }
+            >
+              <span aria-hidden>+</span>
+              Add another friend
+            </button>
+          ) : null}
+        </section>
+
+        <fieldset className="flex flex-col gap-3">
+          <legend className="text-sm font-semibold text-[var(--color-ink)]">
             Interested model
           </legend>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {(["glanza", "hyryder"] as const).map((value) => (
-              <label key={value} className={radioClass}>
+              <label
+                key={value}
+                className="btn-press flex min-h-12 cursor-pointer items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-hairline)] bg-[var(--color-pearl)] px-4 text-sm font-semibold capitalize text-[var(--color-ink)] has-[:checked]:border-[var(--color-toyota-red)] has-[:checked]:bg-[var(--color-toyota-red-soft)] has-[:checked]:text-[var(--color-toyota-red)]"
+              >
                 <input
                   type="radio"
                   name="model"
@@ -208,19 +253,22 @@ export function ReferralForm() {
                   required
                   className="sr-only"
                 />
-                {value}
+                {value === "hyryder" ? "Hyryder" : "Glanza"}
               </label>
             ))}
           </div>
         </fieldset>
 
         {state && !state.ok ? (
-          <p className="text-sm text-[var(--color-danger)]" role="alert">
+          <p
+            className="rounded-[var(--radius-inputs)] border border-[color-mix(in_srgb,var(--color-danger)_25%,white)] bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] px-4 py-3 text-sm font-medium text-[var(--color-danger)]"
+            role="alert"
+          >
             {state.error}
           </p>
         ) : null}
 
-        <button type="submit" className={buttonClass} disabled={pending}>
+        <button type="submit" className={primaryBtn} disabled={pending}>
           {pending ? "Submitting…" : "Submit referral"}
         </button>
       </form>

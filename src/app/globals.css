@@ -3,29 +3,42 @@
 :root {
   --color-toyota-red: #eb0a1e;
   --color-toyota-red-dark: #c4081a;
-  --color-gold: #d4af37;
-  --color-canvas: #fbf9f8;
-  --color-pearl: #f6f3f2;
+  --color-toyota-red-soft: color-mix(in srgb, #eb0a1e 10%, white);
+  --color-gold: #c9a227;
+  --color-canvas: #f3f1f0;
+  --color-pearl: #faf8f7;
   --color-white: #ffffff;
-  --color-ink: #1b1c1c;
-  --color-charcoal: #5e5a59;
-  --color-smoke: #9a9694;
-  --color-hairline: #e4e2e1;
-  --color-danger: #ba1a1a;
-  --radius-inputs: 8px;
-  --radius-hero: 40px;
+  --color-ink: #141414;
+  --color-charcoal: #4a4645;
+  --color-smoke: #6f6b6a;
+  --color-hairline: #ddd9d7;
+  --color-danger: #b42318;
+  --radius-inputs: 10px;
+  --radius-panel: 28px;
   --radius-pill: 999px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --shadow-panel: 0 1px 0 rgb(20 20 20 / 4%), 0 24px 48px -24px rgb(20 20 20 / 18%);
 }
 
 body {
-  background: var(--color-canvas);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgb(235 10 30 / 8%), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgb(201 162 39 / 10%), transparent 50%),
+    linear-gradient(180deg, #f7f5f4 0%, var(--color-canvas) 40%, #eeebea 100%);
+  background-attachment: fixed;
   color: var(--color-ink);
-  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
 }
 
 :focus-visible {
   outline: 2px solid var(--color-toyota-red);
   outline-offset: 2px;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }
 
 .honeypot {
@@ -35,4 +48,83 @@ body {
   width: 1px;
   height: 1px;
   overflow: hidden;
+}
+
+.btn-press {
+  transition:
+    transform 140ms var(--ease-out),
+    background-color 160ms var(--ease-out),
+    border-color 160ms var(--ease-out),
+    opacity 160ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-press:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+}
+
+.btn-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.field-input {
+  transition:
+    border-color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out);
+}
+
+.field-input:focus {
+  border-color: color-mix(in srgb, var(--color-toyota-red) 55%, var(--color-hairline));
+  background: var(--color-white);
+  box-shadow: 0 0 0 3px rgb(235 10 30 / 12%);
+  outline: none;
+}
+
+.friend-block {
+  animation: friend-in 220ms var(--ease-out) both;
+}
+
+.thanks-panel {
+  animation: thanks-in 280ms var(--ease-out) both;
+}
+
+@keyframes friend-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes thanks-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-press,
+  .field-input {
+    transition: none;
+  }
+
+  .friend-block,
+  .thanks-panel {
+    animation: none;
+  }
+
+  .btn-press:active:not(:disabled),
+  .btn-press:hover:not(:disabled) {
+    transform: none;
+  }
 }
