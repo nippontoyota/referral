@@ -1,5 +1,7 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
+
 import { normalizePhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { referralSchema } from "@/schemas/referral";
@@ -31,6 +33,12 @@ export async function submitReferral(
   if (!customerPhone || !referredPhone) {
     return { ok: false, error: "Enter valid 10-digit Indian mobile numbers" };
   }
+  if (customerPhone === referredPhone) {
+    return {
+      ok: false,
+      error: "Your mobile and their mobile must be different numbers",
+    };
+  }
 
   try {
     await prisma.referral.create({
@@ -43,7 +51,16 @@ export async function submitReferral(
       },
     });
     return { ok: true };
-  } catch {
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return {
+        ok: false,
+        error: "This person has already been referred",
+      };
+    }
     return { ok: false, error: "Could not submit. Please try again." };
   }
 }

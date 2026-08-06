@@ -18,7 +18,7 @@ model Referral {
   customerName  String       @map("customer_name")
   customerPhone String       @map("customer_phone")
   referredName  String       @map("referred_name")
-  referredPhone String       @map("referred_phone")
+  referredPhone String       @unique @map("referred_phone")
   model         VehicleModel
   createdAt     DateTime     @default(now()) @map("created_at")
 
