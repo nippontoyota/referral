@@ -26,10 +26,10 @@ export async function submitReferral(
   const parsed = referralSchema.safeParse({
     customerName: String(formData.get("customerName") ?? ""),
     customerPhone: String(formData.get("customerPhone") ?? ""),
-    model: String(formData.get("model") ?? ""),
     friends: names.map((referredName, i) => ({
       referredName,
       referredPhone: phones[i] ?? "",
+      model: String(formData.get(`referredModel-${i}`) ?? ""),
     })),
   });
   if (!parsed.success) {
@@ -44,6 +44,7 @@ export async function submitReferral(
   const friends: {
     referredName: string;
     referredPhone: string;
+    model: "glanza" | "hyryder";
   }[] = [];
   const seen = new Set<string>();
 
@@ -71,6 +72,7 @@ export async function submitReferral(
     friends.push({
       referredName: friend.referredName,
       referredPhone,
+      model: friend.model,
     });
   }
 
@@ -83,7 +85,7 @@ export async function submitReferral(
             customerPhone,
             referredName: friend.referredName,
             referredPhone: friend.referredPhone,
-            model: parsed.data.model,
+            model: friend.model,
           },
         }),
       ),

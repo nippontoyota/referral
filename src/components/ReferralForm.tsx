@@ -218,6 +218,28 @@ export function ReferralForm() {
                   autoComplete="off"
                   placeholder="10-digit Indian mobile"
                 />
+                <fieldset className="flex flex-col gap-2">
+                  <legend className="text-sm font-medium text-[var(--color-ink)]">
+                    Interested model
+                  </legend>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {(["glanza", "hyryder"] as const).map((value) => (
+                      <label
+                        key={value}
+                        className="btn-press flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-hairline)] bg-[var(--color-white)] px-4 text-sm font-semibold text-[var(--color-ink)] has-[:checked]:border-[var(--color-toyota-red)] has-[:checked]:bg-[var(--color-toyota-red-soft)] has-[:checked]:text-[var(--color-toyota-red)]"
+                      >
+                        <input
+                          type="radio"
+                          name={`referredModel-${index}`}
+                          value={value}
+                          required
+                          className="sr-only"
+                        />
+                        {value === "hyryder" ? "Hyryder" : "Glanza"}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
               </div>
             );
           })}
@@ -235,29 +257,6 @@ export function ReferralForm() {
             </button>
           ) : null}
         </section>
-
-        <fieldset className="flex flex-col gap-3">
-          <legend className="text-sm font-semibold text-[var(--color-ink)]">
-            Interested model
-          </legend>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {(["glanza", "hyryder"] as const).map((value) => (
-              <label
-                key={value}
-                className="btn-press flex min-h-12 cursor-pointer items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-hairline)] bg-[var(--color-pearl)] px-4 text-sm font-semibold capitalize text-[var(--color-ink)] has-[:checked]:border-[var(--color-toyota-red)] has-[:checked]:bg-[var(--color-toyota-red-soft)] has-[:checked]:text-[var(--color-toyota-red)]"
-              >
-                <input
-                  type="radio"
-                  name="model"
-                  value={value}
-                  required
-                  className="sr-only"
-                />
-                {value === "hyryder" ? "Hyryder" : "Glanza"}
-              </label>
-            ))}
-          </div>
-        </fieldset>
 
         {state && !state.ok ? (
           <p
