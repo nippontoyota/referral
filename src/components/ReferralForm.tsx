@@ -3,7 +3,7 @@
 import type { InputHTMLAttributes } from "react";
 import { useActionState, useState } from "react";
 
-import { submitReferral } from "@/app/actions/referral";
+import { submitReferral, type ReferralResult } from "@/app/actions/referral";
 
 const buttonClass =
   "inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-toyota-red)] px-6 text-sm font-bold text-white hover:bg-[var(--color-toyota-red-dark)] disabled:opacity-60";
@@ -33,10 +33,30 @@ function Input({
   );
 }
 
-function ReferralFormBody({ onReferAnother }: { onReferAnother: () => void }) {
-  const [state, formAction, pending] = useActionState(submitReferral, null);
+export function ReferralForm() {
+  const [view, setView] = useState<"form" | "thanks">("form");
+  const [formKey, setFormKey] = useState(0);
+  const [customer, setCustomer] = useState({ name: "", phone: "" });
 
-  if (state?.ok) {
+  const [state, formAction, pending] = useActionState(
+    async (
+      prev: ReferralResult | null,
+      formData: FormData,
+    ): Promise<ReferralResult> => {
+      const result = await submitReferral(prev, formData);
+      if (result.ok) {
+        setCustomer({
+          name: String(formData.get("customerName") ?? "").trim(),
+          phone: String(formData.get("customerPhone") ?? "").trim(),
+        });
+        setView("thanks");
+      }
+      return result;
+    },
+    null,
+  );
+
+  if (view === "thanks") {
     return (
       <div className={shellClass}>
         <div
@@ -54,7 +74,14 @@ function ReferralFormBody({ onReferAnother }: { onReferAnother: () => void }) {
           friend.
         </p>
         <div className="mt-8">
-          <button type="button" className={buttonClass} onClick={onReferAnother}>
+          <button
+            type="button"
+            className={buttonClass}
+            onClick={() => {
+              setView("form");
+              setFormKey((n) => n + 1);
+            }}
+          >
             Refer another
           </button>
         </div>
@@ -74,7 +101,11 @@ function ReferralFormBody({ onReferAnother }: { onReferAnother: () => void }) {
         Share your details and tell us who is interested in a Glanza or Hyryder.
       </p>
 
-      <form action={formAction} className="mt-8 flex flex-col gap-5">
+      <form
+        key={formKey}
+        action={formAction}
+        className="mt-8 flex flex-col gap-5"
+      >
         <div className="honeypot" aria-hidden="true">
           <label htmlFor="website">Website</label>
           <input
@@ -93,6 +124,7 @@ function ReferralFormBody({ onReferAnother }: { onReferAnother: () => void }) {
           minLength={2}
           maxLength={100}
           autoComplete="name"
+          defaultValue={customer.name}
         />
         <Input
           label="Your mobile"
@@ -101,6 +133,7 @@ function ReferralFormBody({ onReferAnother }: { onReferAnother: () => void }) {
           inputMode="tel"
           autoComplete="tel"
           placeholder="10-digit Indian mobile"
+          defaultValue={customer.phone}
         />
         <Input
           label="Person you are referring"
@@ -108,14 +141,14 @@ function ReferralFormBody({ onReferAnother }: { onReferAnother: () => void }) {
           required
           minLength={2}
           maxLength={100}
-          autoComplete="name"
+          autoComplete="off"
         />
         <Input
           label="Their mobile"
           name="referredPhone"
           required
           inputMode="tel"
-          autoComplete="tel"
+          autoComplete="off"
           placeholder="10-digit Indian mobile"
         />
 
@@ -150,15 +183,5 @@ function ReferralFormBody({ onReferAnother }: { onReferAnother: () => void }) {
         </button>
       </form>
     </div>
-  );
-}
-
-export function ReferralForm() {
-  const [instance, setInstance] = useState(0);
-  return (
-    <ReferralFormBody
-      key={instance}
-      onReferAnother={() => setInstance((n) => n + 1)}
-    />
   );
 }

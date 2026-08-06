@@ -26,28 +26,12 @@ Checks: `npm run lint`, `npm test`, `npm run build`.
 
 GUI:
 
-```bash
+```powershell
 npx prisma studio
 ```
 
-List all rows (PowerShell):
+List all rows:
 
 ```powershell
-@'
-const { PrismaClient } = require("@prisma/client");
-const p = new PrismaClient();
-p.referral.findMany({ orderBy: { createdAt: "desc" } })
-  .then((rows) => console.log(JSON.stringify(rows, null, 2)))
-  .finally(() => p.$disconnect());
-'@ | node
-```
-
-Count:
-
-```powershell
-@'
-const { PrismaClient } = require("@prisma/client");
-const p = new PrismaClient();
-p.referral.count().then(console.log).finally(() => p.$disconnect());
-'@ | node
+node scripts/list-referrals.cjs
 ```
