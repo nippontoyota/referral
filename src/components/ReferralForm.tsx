@@ -10,7 +10,7 @@ const primaryBtn =
   "btn-press inline-flex min-h-12 w-full items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-toyota-red)] px-6 text-[15px] font-semibold text-white hover:bg-[var(--color-toyota-red-dark)] disabled:pointer-events-none disabled:opacity-55";
 
 const secondaryBtn =
-  "btn-press inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-pill)] border border-dashed border-[var(--color-hairline)] bg-transparent px-5 text-sm font-semibold text-[var(--color-ink)] hover:border-[var(--color-charcoal)] hover:bg-[var(--color-pearl)] disabled:pointer-events-none disabled:opacity-55";
+  "btn-press inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[var(--radius-inputs)] border border-dashed border-[var(--color-hairline)] bg-[var(--color-pearl)]/40 px-5 text-sm font-semibold text-[var(--color-ink)] hover:border-[var(--color-charcoal)] hover:bg-[var(--color-pearl)] disabled:pointer-events-none disabled:opacity-55";
 
 const panelClass =
   "w-full max-w-[540px] rounded-[var(--radius-panel)] border border-[var(--color-hairline)] bg-[var(--color-white)] shadow-[var(--shadow-panel)]";
@@ -30,7 +30,7 @@ function Field({
       <input
         {...props}
         id={id}
-        className="field-input min-h-12 w-full rounded-[var(--radius-inputs)] border border-[var(--color-hairline)] bg-[var(--color-pearl)] px-4 text-base text-[var(--color-ink)] placeholder:text-[var(--color-smoke)]"
+        className="field-input min-h-12 w-full rounded-[var(--radius-inputs)] border border-[var(--color-hairline)] bg-[var(--color-white)] px-4 text-base text-[var(--color-ink)] placeholder:text-[var(--color-smoke)]"
       />
       {hint ? (
         <span className="text-xs leading-snug text-[var(--color-smoke)]">
@@ -192,10 +192,10 @@ export function ReferralForm() {
           </section>
 
           <section
-            className="flex flex-col gap-0"
+            className="flex flex-col gap-4"
             aria-labelledby="friends-heading"
           >
-            <div className="mb-2 flex items-end justify-between gap-3">
+            <div className="flex items-end justify-between gap-3">
               <h2
                 id="friends-heading"
                 className="text-base font-semibold text-[var(--color-ink)]"
@@ -216,9 +216,9 @@ export function ReferralForm() {
                     if (el) friendRefs.current.set(key, el);
                     else friendRefs.current.delete(key);
                   }}
-                  className="friend-block border-t border-[var(--color-hairline)] py-6"
+                  className="friend-block flex flex-col gap-4 rounded-[var(--radius-inputs)] border border-[var(--color-hairline)] bg-[var(--color-pearl)] p-4 md:p-5"
                 >
-                  <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-[var(--color-ink)]">
                       Friend {n}
                     </p>
@@ -237,36 +237,34 @@ export function ReferralForm() {
                     ) : null}
                   </div>
 
-                  <div className="flex flex-col gap-4">
-                    <Field
-                      label="Their name"
-                      id={`referredName-${key}`}
-                      name="referredName"
-                      required
-                      minLength={2}
-                      maxLength={100}
-                      autoComplete="off"
-                    />
-                    <Field
-                      label="Their mobile"
-                      id={`referredPhone-${key}`}
-                      name="referredPhone"
-                      required
-                      inputMode="tel"
-                      autoComplete="off"
-                      placeholder="10-digit mobile"
-                    />
-                  </div>
+                  <Field
+                    label="Their name"
+                    id={`referredName-${key}`}
+                    name="referredName"
+                    required
+                    minLength={2}
+                    maxLength={100}
+                    autoComplete="off"
+                  />
+                  <Field
+                    label="Their mobile"
+                    id={`referredPhone-${key}`}
+                    name="referredPhone"
+                    required
+                    inputMode="tel"
+                    autoComplete="off"
+                    placeholder="10-digit mobile"
+                  />
 
-                  <fieldset className="mt-4 flex flex-col gap-2">
+                  <fieldset className="flex flex-col gap-2">
                     <legend className="text-sm font-medium text-[var(--color-ink)]">
-                      Model they’re interested in
+                      Interested model
                     </legend>
-                    <div className="grid grid-cols-2 gap-1 rounded-[var(--radius-pill)] border border-[var(--color-hairline)] bg-[var(--color-pearl)] p-1">
+                    <div className="flex flex-col gap-2">
                       {(["glanza", "hyryder"] as const).map((value) => (
                         <label
                           key={value}
-                          className="model-seg btn-press flex min-h-10 cursor-pointer items-center justify-center rounded-[var(--radius-pill)] px-3 text-sm font-semibold text-[var(--color-charcoal)] has-[:checked]:bg-[var(--color-white)] has-[:checked]:text-[var(--color-toyota-red)] has-[:checked]:shadow-sm"
+                          className="btn-press flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-hairline)] bg-[var(--color-white)] px-4 text-sm font-semibold text-[var(--color-ink)] has-[:checked]:border-[var(--color-toyota-red)] has-[:checked]:bg-[var(--color-toyota-red-soft)] has-[:checked]:text-[var(--color-toyota-red)]"
                         >
                           <input
                             type="radio"
@@ -287,7 +285,7 @@ export function ReferralForm() {
             {friendKeys.length < MAX_FRIENDS ? (
               <button
                 type="button"
-                className={`${secondaryBtn} mb-2`}
+                className={secondaryBtn}
                 onClick={() => {
                   const next = (friendKeys.at(-1) ?? 0) + 1;
                   pendingFocusKey.current = next;
@@ -300,7 +298,7 @@ export function ReferralForm() {
                 Add another friend
               </button>
             ) : (
-              <p className="mb-2 text-sm text-[var(--color-smoke)]">
+              <p className="text-sm text-[var(--color-smoke)]">
                 Maximum of {MAX_FRIENDS} friends per submission.
               </p>
             )}
