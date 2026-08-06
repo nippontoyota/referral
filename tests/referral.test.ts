@@ -29,13 +29,13 @@ describe("referralSchema", () => {
     ).toBe(false);
   });
 
-  it("rejects more than five friends", () => {
+  it("rejects more than fifty friends", () => {
     expect(
       referralSchema.safeParse({
         ...valid,
-        friends: Array.from({ length: 6 }, (_, i) => ({
+        friends: Array.from({ length: 51 }, (_, i) => ({
           referredName: `Friend ${i}`,
-          referredPhone: `987654321${i}`,
+          referredPhone: `9${String(i).padStart(9, "0")}`,
         })),
       }).success,
     ).toBe(false);

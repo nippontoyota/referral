@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const MAX_FRIENDS = 5;
+export const MAX_FRIENDS = 50;
 
 export const friendSchema = z.object({
   referredName: z.string().trim().min(2).max(100),
