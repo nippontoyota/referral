@@ -3,28 +3,30 @@
 :root {
   --color-toyota-red: #eb0a1e;
   --color-toyota-red-dark: #c4081a;
-  --color-toyota-red-soft: color-mix(in srgb, #eb0a1e 10%, white);
+  --color-toyota-red-soft: color-mix(in srgb, #eb0a1e 12%, white);
   --color-gold: #c9a227;
-  --color-canvas: #f3f1f0;
-  --color-pearl: #faf8f7;
+  --color-canvas: #f0eeed;
+  --color-pearl: #f7f5f4;
   --color-white: #ffffff;
   --color-ink: #141414;
-  --color-charcoal: #4a4645;
-  --color-smoke: #6f6b6a;
-  --color-hairline: #ddd9d7;
+  --color-charcoal: #3f3c3b;
+  --color-smoke: #5c5857;
+  --color-hairline: #d8d4d2;
   --color-danger: #b42318;
-  --radius-inputs: 10px;
-  --radius-panel: 28px;
+  --radius-inputs: 12px;
+  --radius-panel: 24px;
   --radius-pill: 999px;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --shadow-panel: 0 1px 0 rgb(20 20 20 / 4%), 0 24px 48px -24px rgb(20 20 20 / 18%);
+  --shadow-panel:
+    0 1px 0 rgb(20 20 20 / 3%),
+    0 18px 40px -20px rgb(20 20 20 / 16%);
 }
 
 body {
   background:
-    radial-gradient(1200px 600px at 10% -10%, rgb(235 10 30 / 8%), transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, rgb(201 162 39 / 10%), transparent 50%),
-    linear-gradient(180deg, #f7f5f4 0%, var(--color-canvas) 40%, #eeebea 100%);
+    radial-gradient(900px 480px at 0% 0%, rgb(235 10 30 / 7%), transparent 55%),
+    radial-gradient(700px 420px at 100% 8%, rgb(201 162 39 / 8%), transparent 50%),
+    var(--color-canvas);
   background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
@@ -55,6 +57,7 @@ h3 {
     transform 140ms var(--ease-out),
     background-color 160ms var(--ease-out),
     border-color 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out),
     opacity 160ms var(--ease-out);
 }
 
@@ -76,35 +79,42 @@ h3 {
 }
 
 .field-input:focus {
-  border-color: color-mix(in srgb, var(--color-toyota-red) 55%, var(--color-hairline));
+  border-color: color-mix(in srgb, var(--color-toyota-red) 50%, var(--color-hairline));
   background: var(--color-white);
   box-shadow: 0 0 0 3px rgb(235 10 30 / 12%);
   outline: none;
 }
 
+.model-seg {
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out);
+}
+
 .friend-block {
-  animation: friend-in 220ms var(--ease-out) both;
+  animation: friend-in 200ms var(--ease-out) both;
 }
 
 .thanks-panel {
-  animation: thanks-in 280ms var(--ease-out) both;
+  animation: thanks-in 260ms var(--ease-out) both;
 }
 
 @keyframes friend-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes thanks-in {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.98);
+    transform: translateY(8px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -114,7 +124,8 @@ h3 {
 
 @media (prefers-reduced-motion: reduce) {
   .btn-press,
-  .field-input {
+  .field-input,
+  .model-seg {
     transition: none;
   }
 
