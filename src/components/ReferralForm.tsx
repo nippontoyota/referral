@@ -4,9 +4,13 @@ import type { InputHTMLAttributes } from "react";
 import { useActionState, useState } from "react";
 
 import { submitReferral, type ReferralResult } from "@/app/actions/referral";
+import { MAX_FRIENDS } from "@/schemas/referral";
 
 const buttonClass =
   "inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-toyota-red)] px-6 text-sm font-bold text-white hover:bg-[var(--color-toyota-red-dark)] disabled:opacity-60";
+
+const addButtonClass =
+  "inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-ink)] bg-transparent px-6 text-sm font-bold text-[var(--color-ink)] hover:bg-[var(--color-pearl)] disabled:opacity-60";
 
 const shellClass =
   "w-full max-w-[560px] rounded-3xl border border-[var(--color-hairline)] bg-[var(--color-white)] p-6 md:rounded-[var(--radius-hero)] md:p-12";
@@ -36,6 +40,7 @@ function Input({
 export function ReferralForm() {
   const [view, setView] = useState<"form" | "thanks">("form");
   const [formKey, setFormKey] = useState(0);
+  const [friendKeys, setFriendKeys] = useState([0]);
   const [customer, setCustomer] = useState({ name: "", phone: "" });
 
   const [state, formAction, pending] = useActionState(
@@ -78,6 +83,7 @@ export function ReferralForm() {
             type="button"
             className={buttonClass}
             onClick={() => {
+              setFriendKeys([0]);
               setView("form");
               setFormKey((n) => n + 1);
             }}
@@ -135,22 +141,58 @@ export function ReferralForm() {
           placeholder="10-digit Indian mobile"
           defaultValue={customer.phone}
         />
-        <Input
-          label="Person you are referring"
-          name="referredName"
-          required
-          minLength={2}
-          maxLength={100}
-          autoComplete="off"
-        />
-        <Input
-          label="Their mobile"
-          name="referredPhone"
-          required
-          inputMode="tel"
-          autoComplete="off"
-          placeholder="10-digit Indian mobile"
-        />
+
+        {friendKeys.map((key, index) => {
+          const n = index + 1;
+          const nameLabel =
+            n === 1 ? "Person you are referring" : `Person you are referring ${n}`;
+          const phoneLabel = n === 1 ? "Their mobile" : `Their mobile ${n}`;
+          return (
+            <div key={key} className="flex flex-col gap-5">
+              <Input
+                label={nameLabel}
+                id={`referredName-${key}`}
+                name="referredName"
+                required
+                minLength={2}
+                maxLength={100}
+                autoComplete="off"
+              />
+              <Input
+                label={phoneLabel}
+                id={`referredPhone-${key}`}
+                name="referredPhone"
+                required
+                inputMode="tel"
+                autoComplete="off"
+                placeholder="10-digit Indian mobile"
+              />
+              {friendKeys.length > 1 ? (
+                <button
+                  type="button"
+                  className="self-start text-sm font-bold text-[var(--color-danger)]"
+                  onClick={() =>
+                    setFriendKeys((keys) => keys.filter((k) => k !== key))
+                  }
+                >
+                  Remove person {n}
+                </button>
+              ) : null}
+            </div>
+          );
+        })}
+
+        {friendKeys.length < MAX_FRIENDS ? (
+          <button
+            type="button"
+            className={addButtonClass}
+            onClick={() =>
+              setFriendKeys((keys) => [...keys, (keys.at(-1) ?? 0) + 1])
+            }
+          >
+            Add
+          </button>
+        ) : null}
 
         <fieldset>
           <legend className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--color-charcoal)]">
