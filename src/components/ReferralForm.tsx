@@ -169,7 +169,7 @@ export function ReferralForm() {
             >
               Your details
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-4">
               <Field
                 label="Your name"
                 name="customerName"
@@ -237,7 +237,7 @@ export function ReferralForm() {
                     ) : null}
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-4">
                     <Field
                       label="Their name"
                       id={`referredName-${key}`}
