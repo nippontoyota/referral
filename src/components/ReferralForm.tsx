@@ -63,7 +63,7 @@ export function ReferralForm() {
   const [friendKeys, setFriendKeys] = useState([0]);
   const [submittedCount, setSubmittedCount] = useState(1);
   const [customer, setCustomer] = useState({ name: "", phone: "" });
-  const [focusFriendKey, setFocusFriendKey] = useState<number | null>(null);
+  const pendingFocusKey = useRef<number | null>(null);
   const friendRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const [state, formAction, pending] = useActionState(
@@ -86,15 +86,15 @@ export function ReferralForm() {
   );
 
   useEffect(() => {
-    if (focusFriendKey === null) return;
-    const node = friendRefs.current.get(focusFriendKey);
+    const key = pendingFocusKey.current;
+    if (key === null) return;
+    pendingFocusKey.current = null;
+    const node = friendRefs.current.get(key);
     node?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    const input = node?.querySelector<HTMLInputElement>(
-      'input[name="referredName"]',
-    );
-    input?.focus();
-    setFocusFriendKey(null);
-  }, [focusFriendKey, friendKeys]);
+    node
+      ?.querySelector<HTMLInputElement>('input[name="referredName"]')
+      ?.focus();
+  }, [friendKeys]);
 
   if (view === "thanks") {
     const friendWord = submittedCount === 1 ? "friend" : "friends";
@@ -290,8 +290,8 @@ export function ReferralForm() {
                 className={`${secondaryBtn} mb-2`}
                 onClick={() => {
                   const next = (friendKeys.at(-1) ?? 0) + 1;
+                  pendingFocusKey.current = next;
                   setFriendKeys((keys) => [...keys, next]);
-                  setFocusFriendKey(next);
                 }}
               >
                 <span aria-hidden className="text-lg leading-none">
